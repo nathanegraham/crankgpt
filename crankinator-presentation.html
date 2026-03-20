@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crankinator: The Cost of a Question</title>
+<style>
+  /* ── Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:   #1B7A3A;
+    --green-dk:#155c2c;
+    --coral:   #F08C78;
+    --cream:   #F5F1E6;
+    --blue:    #1A6FE8;
+    --white:   #FFFFFF;
+    --black:   #111111;
+    --gray:    #555555;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    background: #0e0e0e;
+    overflow: hidden;
+  }
+
+  /* ── Deck wrapper ── */
+  #deck {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Individual slide ── */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 56px 72px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+    overflow: hidden;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── Background themes ── */
+  .bg-green  { background: var(--green); }
+  .bg-cream  { background: var(--cream); }
+  .bg-white  { background: var(--white); }
+  .bg-dark   { background: #0f2518; }
+
+  /* ── Decorative corner shapes ── */
+  .corner-tr, .corner-bl {
+    position: absolute;
+    width: 120px; height: 120px;
+    pointer-events: none;
+  }
+  .corner-tr { top: 0; right: 0; }
+  .corner-bl { bottom: 0; left: 0; }
+
+  /* ── Typography ── */
+  .slide-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin-bottom: 16px;
+    align-self: flex-start;
+  }
+  .on-green .slide-label { color: var(--white); }
+  .on-cream .slide-label { color: var(--green); }
+  .on-white .slide-label { color: var(--green); }
+
+  h1 { font-size: clamp(36px, 5.5vw, 68px); font-weight: 800; line-height: 1.05; }
+  h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; line-height: 1.1; }
+  h3 { font-size: clamp(20px, 2.5vw, 30px); font-weight: 600; }
+  p  { font-size: clamp(15px, 1.8vw, 20px); line-height: 1.6; }
+  li { font-size: clamp(14px, 1.7vw, 19px); line-height: 1.65; margin-bottom: 6px; }
+
+  /* ── Color helpers ── */
+  .tc-blue   { color: var(--blue); }
+  .tc-coral  { color: var(--coral); }
+  .tc-green  { color: var(--green); }
+  .tc-white  { color: var(--white); }
+  .tc-cream  { color: var(--cream); }
+  .tc-black  { color: var(--black); }
+
+  /* ── Layout helpers ── */
+  .full-w  { width: 100%; }
+  .cols-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; width: 100%; align-items: start; }
+  .cols-3  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; width: 100%; }
+  .stack   { display: flex; flex-direction: column; gap: 16px; }
+  .center  { text-align: center; }
+  .mt-sm   { margin-top: 12px; }
+  .mt-md   { margin-top: 24px; }
+  .mt-lg   { margin-top: 40px; }
+
+  /* ── Cards ── */
+  .card {
+    border-radius: 14px;
+    padding: 28px 32px;
+    background: rgba(255,255,255,0.12);
+  }
+  .card-cream { background: var(--cream); color: var(--black); }
+  .card-green { background: var(--green); color: var(--white); }
+  .card-dark  { background: rgba(0,0,0,0.25); color: var(--white); border-radius: 14px; padding: 28px 32px; }
+
+  /* ── Big number callout ── */
+  .stat-block { text-align: center; }
+  .stat-num   { font-size: clamp(48px, 7vw, 90px); font-weight: 900; line-height: 1; }
+  .stat-unit  { font-size: clamp(13px, 1.5vw, 17px); opacity: 0.75; margin-top: 4px; }
+
+  /* ── Step list ── */
+  .step-list { list-style: none; display: flex; flex-direction: column; gap: 18px; }
+  .step-list li {
+    display: flex; align-items: flex-start; gap: 16px;
+    font-size: clamp(15px, 1.8vw, 19px);
+  }
+  .step-num {
+    min-width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--coral);
+    color: var(--white);
+    font-weight: 700; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex; align-items: center; gap: 0;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+  .flow-node {
+    background: var(--white);
+    color: var(--black);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: clamp(12px, 1.4vw, 15px);
+    flex: 1;
+    max-width: 160px;
+    line-height: 1.3;
+  }
+  .flow-node .icon { font-size: 26px; display: block; margin-bottom: 6px; }
+  .flow-arrow {
+    color: var(--coral);
+    font-size: 28px;
+    font-weight: 900;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── Bar chart ── */
+  .chart-wrap {
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 24px 28px 16px;
+  }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .bar-group { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row   { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 64px; font-size: 13px; font-weight: 600; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 26px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; }
+  .bar-fill  {
+    height: 100%;
+    border-radius: 6px;
+    display: flex; align-items: center; padding-left: 10px;
+    font-size: 12px; font-weight: 700; color: white;
+    transition: width 0.8s ease;
+    white-space: nowrap;
+  }
+
+  /* ── Data table ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(13px, 1.5vw, 16px);
+  }
+  .data-table th {
+    background: rgba(255,255,255,0.18);
+    color: var(--white);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .data-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: var(--white);
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:nth-child(odd) td { background: rgba(255,255,255,0.04); }
+  .data-table .highlight { color: var(--coral); font-weight: 700; }
+
+  /* ── Tag pill ── */
+  .pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--coral);
+    color: white;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  .pill-outline {
+    background: transparent;
+    border: 2px solid var(--coral);
+    color: var(--coral);
+  }
+
+  /* ── Progress / nav bar ── */
+  #ui {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    padding: 10px 20px;
+  }
+  #prev-btn, #next-btn {
+    background: none; border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px; cursor: pointer;
+    padding: 4px 12px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  #prev-btn:hover, #next-btn:hover { color: white; }
+  #progress-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0 12px;
+  }
+  #progress-fill {
+    height: 100%;
+    background: var(--coral);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  #slide-counter {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  /* ── Hotkey hint ── */
+  #hint {
+    position: fixed;
+    bottom: 52px; right: 20px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    pointer-events: none;
+  }
+
+  /* ─────────────────────────────────────────
+     SLIDE 1 – Title
+  ───────────────────────────────────────── */
+  #s1 { background: var(--cream); }
+  #s1 .title-box {
+    background: var(--cream);
+    position: relative;
+    z-index: 2;
+  }
+  #s1 .s1-coral-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 48%;
+    background: var(--coral);
+    z-index: 0;
+  }
+  #s1 .s1-inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    padding: 0;
+  }
+  #s1 .s1-green-tri {
+    position: absolute;
+    top: 16px; left: 24px;
+    width: 0; height: 0;
+    border-right: 60px solid transparent;
+    border-bottom: 104px solid var(--green);
+    z-index: 3;
+  }
+  #s1 .s1-green-tri-2 {
+    position: absolute;
+    bottom: 20px; right: 40px;
+    width: 0; height: 0;
+    border-left: 80px solid transparent;
+    border-top: 120px solid var(--green);
+    z-index: 3;
+  }
+  #s1 .title-card {
+    background: var(--cream);
+    padding: 40px 56px;
+    transform: rotate(-1.5deg);
+    border-radius: 4px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  #s1 .byline { margin-top: 24px; }
+
+  /* ─────────────────────────────────────────
+     SLIDE 2 – Hook
+  ───────────────────────────────────────── */
+  #s2 { background: #0f2518; }
+  #s2 .hook-text {
+    font-size: clamp(28px, 4.5vw, 60px);
+    font-weight: 800;
+    color: var(--white);
+    text-align: center;
+    line-height: 1.15;
+    max-width: 860px;
+  }
+  #s2 .hook-text .hl { color: var(--coral); }
+  #s2 .hook-sub {
+    margin-top: 28px;
+    text-align: center;
+    color: rgba(255,255,255,0.6);
+    font-size: clamp(16px, 2vw, 22px);
+    max-width: 640px;
+  }
+
+  /* ─────────────────────────────────────────
+     SLIDE 3 – Problem
+  ───────────────────────────────────────── */
+  #s3 { background: var(--cream); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 4 – Meet Crankinator
+  ───────────────────────────────────────── */
+  #s4 { background: var(--green); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 5 – How it works
+  ───────────────────────────────────────── */
+  #s5 { background: var(--cream); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 6 – Materials
+  ───────────────────────────────────────── */
+  #s6 { background: var(--green); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 7 – Experiment
+  ───────────────────────────────────────── */
+  #s7 { background: var(--cream); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 8 – Results chart
+  ───────────────────────────────────────── */
+  #s8 { background: var(--green); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 9 – Conclusion
+  ───────────────────────────────────────── */
+  #s9 { background: var(--cream); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 10 – CER
+  ───────────────────────────────────────── */
+  #s10 { background: var(--green); }
+
+  /* ─────────────────────────────────────────
+     SLIDE 11 – Q&A / Try It
+  ───────────────────────────────────────── */
+  #s11 { background: #0f2518; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .cols-2 { grid-template-columns: 1fr; gap: 20px; }
+    .cols-3 { grid-template-columns: 1fr; }
+    .slide  { padding: 36px 28px; }
+    .flow   { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 1 — Title
+  ══════════════════════════════════════════ -->
+  <div class="slide active" id="s1">
+    <div class="s1-coral-bar"></div>
+    <div class="s1-green-tri"></div>
+    <div class="s1-green-tri-2"></div>
+    <div class="s1-inner">
+      <div class="title-card">
+        <h1 class="tc-blue">Crankinator:<br>The Cost of<br>a Question</h1>
+        <div class="byline" style="color: var(--green);">
+          <p style="font-weight:700; font-size:18px;">Julian Mariano-Graham &amp; Nathan Graham</p>
+          <p style="font-size:15px; margin-top:4px; opacity:0.75;">6th Grade · Schreiber, 4th Period · March 2026</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 2 — Hook
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <div class="hook-text">
+      Every time you ask AI a question,<br>
+      <span class="hl">electricity is used.</span><br>
+      But you never feel it.
+    </div>
+    <p class="hook-sub">
+      What if you had to <strong style="color:var(--coral)">physically work</strong> for every answer?
+    </p>
+    <div style="margin-top:48px; display:flex; gap:32px; flex-wrap:wrap; justify-content:center;">
+      <div class="stat-block" style="color:white;">
+        <div class="stat-num" style="color:var(--coral);">~20</div>
+        <div class="stat-unit">mWh per short answer</div>
+      </div>
+      <div class="stat-block" style="color:white;">
+        <div class="stat-num" style="color:var(--coral);">~188</div>
+        <div class="stat-unit">mWh per long answer</div>
+      </div>
+      <div class="stat-block" style="color:white;">
+        <div class="stat-num" style="color:var(--coral);">0</div>
+        <div class="stat-unit">felt by the user</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 3 — Problem
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <div class="cols-2" style="align-items:center;">
+      <div class="stack">
+        <p class="slide-label on-cream tc-green">The Problem</p>
+        <h2 class="tc-blue">How much electricity does an AI answer actually take?</h2>
+        <p class="mt-md" style="color:var(--gray);">
+          AI responses consume real electrical energy, but that cost is completely <strong>invisible</strong> to the person asking.
+          Cloud AI hides it behind a data center far away.
+        </p>
+        <p class="mt-sm" style="color:var(--gray);">
+          We wanted to make the energy cost <strong>visible</strong> — and <strong>physical</strong>.
+        </p>
+        <div style="margin-top:28px; display:flex; gap:12px; flex-wrap:wrap;">
+          <span class="pill">Energy</span>
+          <span class="pill">AI</span>
+          <span class="pill">Measurement</span>
+          <span class="pill">Awareness</span>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card-green" style="border-radius:14px; padding:28px;">
+          <p style="font-size:28px; margin-bottom:8px;">💡</p>
+          <h3 class="tc-white">Energy feels free</h3>
+          <p style="color:rgba(255,255,255,0.8); margin-top:8px; font-size:15px;">When you tap a screen, nothing happens to you. No effort. No feedback.</p>
+        </div>
+        <div style="border-radius:14px; padding:28px; background:var(--coral);">
+          <p style="font-size:28px; margin-bottom:8px;">⚡</p>
+          <h3 class="tc-white">But it's not free</h3>
+          <p style="color:rgba(255,255,255,0.9); margin-top:8px; font-size:15px;">Every AI answer draws real watts from a real power grid.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 4 — Meet the Crankinator
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s4">
+    <!-- coral corner -->
+    <svg style="position:absolute;top:0;right:0;width:120px;height:120px;" viewBox="0 0 120 120"><polygon points="120,0 120,120 0,0" fill="var(--coral)" opacity="0.5"/></svg>
+    <div style="width:100%;">
+      <p class="slide-label on-green tc-cream" style="color:rgba(255,255,255,0.6);">The Solution</p>
+      <h2 class="tc-white" style="margin-bottom:32px;">Meet the <span style="color:var(--coral);">Crankinator</span></h2>
+      <div class="cols-2">
+        <div class="stack">
+          <p class="tc-white" style="font-size:clamp(15px,1.8vw,20px); opacity:0.9; line-height:1.7;">
+            A machine that makes the energy cost of AI <strong>real and physical</strong>.
+          </p>
+          <ul class="step-list" style="margin-top:12px;">
+            <li>
+              <span class="step-num">1</span>
+              <span class="tc-white">You type a question into the kiosk</span>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <span class="tc-white">A local AI model generates the answer — energy is measured</span>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <span class="tc-white">The answer is <strong style="color:var(--coral);">locked</strong> behind an energy meter</span>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <span class="tc-white">You crank a generator to produce that exact energy</span>
+            </li>
+            <li>
+              <span class="step-num">5</span>
+              <span class="tc-white">When you've generated enough — the answer <strong style="color:var(--coral);">unlocks!</strong></span>
+            </li>
+          </ul>
+        </div>
+        <div class="card-dark" style="display:flex; flex-direction:column; gap:16px; justify-content:center;">
+          <div style="text-align:center; font-size:64px;">⚙️</div>
+          <h3 class="tc-coral" style="text-align:center;">The Big Idea</h3>
+          <p class="tc-white" style="text-align:center; opacity:0.85; font-size:16px;">
+            "If AI answers cost energy, you should have to <em>make</em> that energy to get the answer."
+          </p>
+          <div style="border-top:1px solid rgba(255,255,255,0.15); padding-top:16px; margin-top:4px;">
+            <p style="font-size:13px; color:rgba(255,255,255,0.55); text-align:center;">Running a local AI model on a Jetson Orin Nano</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 5 — How It Works
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s5">
+    <div style="width:100%;">
+      <p class="slide-label on-cream tc-green">System Design</p>
+      <h2 class="tc-blue" style="margin-bottom:36px;">How it works</h2>
+
+      <div class="flow">
+        <div class="flow-node">
+          <span class="icon">🧑</span>
+          <strong>User</strong><br>types a question
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="background:var(--green); color:white;">
+          <span class="icon">🖥️</span>
+          <strong>Jetson Orin Nano</strong><br>runs AI model
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="background:var(--blue); color:white;">
+          <span class="icon">🔒</span>
+          <strong>Answer</strong><br>locks &amp; energy measured
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="background:#8B4513; color:white;">
+          <span class="icon">🔄</span>
+          <strong>Hand Crank</strong><br>generates power
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="background:var(--coral); color:white;">
+          <span class="icon">🔓</span>
+          <strong>Unlock!</strong><br>answer revealed
+        </div>
+      </div>
+
+      <div class="cols-3" style="margin-top:36px;">
+        <div style="background:rgba(27,122,58,0.08); border-radius:12px; padding:20px; border:2px solid var(--green);">
+          <p style="font-weight:700; color:var(--green); margin-bottom:8px;">⚡ Energy Source</p>
+          <p style="font-size:14px; color:var(--gray);">Hand crank → USB power bank → UM34C Bluetooth meter measures mWh generated</p>
+        </div>
+        <div style="background:rgba(26,111,232,0.07); border-radius:12px; padding:20px; border:2px solid var(--blue);">
+          <p style="font-weight:700; color:var(--blue); margin-bottom:8px;">🤖 AI Engine</p>
+          <p style="font-size:14px; color:var(--gray);">Jetson Orin Nano + Qwen 3.5 2B model via llama.cpp, energy measured by INA3221 sensor</p>
+        </div>
+        <div style="background:rgba(240,140,120,0.1); border-radius:12px; padding:20px; border:2px solid var(--coral);">
+          <p style="font-weight:700; color:var(--coral); margin-bottom:8px;">📊 Kiosk UI</p>
+          <p style="font-size:14px; color:var(--gray);">Web dashboard shows required mWh, live progress bar, and auto-unlocks when energy target is met</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 6 — Materials
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s6">
+    <svg style="position:absolute;top:0;right:0;width:120px;height:120px;" viewBox="0 0 120 120"><polygon points="120,0 120,120 0,0" fill="var(--coral)" opacity="0.4"/></svg>
+    <div style="width:100%;">
+      <p class="slide-label" style="color:rgba(255,255,255,0.55);">What We Built With</p>
+      <h2 class="tc-white" style="margin-bottom:28px;">Materials</h2>
+      <div class="cols-2">
+        <div class="stack">
+          <div class="card-dark">
+            <p style="font-weight:700; color:var(--coral); margin-bottom:12px; font-size:15px; letter-spacing:0.05em; text-transform:uppercase;">🖥 Compute Station</p>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+              <li class="tc-white" style="font-size:15px;">◆ NVIDIA Jetson Orin Nano Developer Kit</li>
+              <li class="tc-white" style="font-size:15px;">◆ 7" HDMI monitor</li>
+              <li class="tc-white" style="font-size:15px;">◆ USB keyboard</li>
+              <li class="tc-white" style="font-size:15px;">◆ DisplayPort → HDMI cable</li>
+            </ul>
+          </div>
+          <div class="card-dark">
+            <p style="font-weight:700; color:var(--coral); margin-bottom:12px; font-size:15px; letter-spacing:0.05em; text-transform:uppercase;">🔧 Software</p>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+              <li class="tc-white" style="font-size:15px;">◆ Qwen 3.5 2B (GGUF) via llama.cpp</li>
+              <li class="tc-white" style="font-size:15px;">◆ JetPack 6 (OS for Jetson)</li>
+              <li class="tc-white" style="font-size:15px;">◆ Custom Python + Flask web app</li>
+            </ul>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card-dark">
+            <p style="font-weight:700; color:var(--coral); margin-bottom:12px; font-size:15px; letter-spacing:0.05em; text-transform:uppercase;">🔄 Crank Station</p>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+              <li class="tc-white" style="font-size:15px;">◆ Hand crank generator (5V, 28W max)</li>
+              <li class="tc-white" style="font-size:15px;">◆ UM34C USB power meter (Bluetooth)</li>
+              <li class="tc-white" style="font-size:15px;">◆ Anker power bank (energy buffer)</li>
+            </ul>
+          </div>
+          <div class="card-dark">
+            <p style="font-weight:700; color:var(--coral); margin-bottom:12px; font-size:15px; letter-spacing:0.05em; text-transform:uppercase;">📐 How It's Wired</p>
+            <p style="font-size:14px; color:rgba(255,255,255,0.75); line-height:1.6;">
+              Crank → UM34C → Power bank<br>
+              UM34C sends mWh data via Bluetooth to Jetson.<br>
+              Jetson measures its own energy via INA3221 sensor.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 7 — Experiment
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s7">
+    <div style="width:100%;">
+      <p class="slide-label on-cream tc-green">Research Design</p>
+      <h2 class="tc-blue" style="margin-bottom:28px;">Experiment 1: Energy vs. Answer Length</h2>
+      <div class="cols-2">
+        <div class="stack">
+          <div style="background:rgba(27,122,58,0.08); border-radius:14px; padding:24px; border-left:5px solid var(--green);">
+            <h3 style="color:var(--green); margin-bottom:12px;">Question</h3>
+            <p style="color:var(--gray); font-size:15px;">Does a longer AI answer use more energy?</p>
+          </div>
+          <div style="background:rgba(26,111,232,0.07); border-radius:14px; padding:24px; border-left:5px solid var(--blue);">
+            <h3 style="color:var(--blue); margin-bottom:12px;">Procedure</h3>
+            <ol style="padding-left:18px; color:var(--gray); font-size:14px; line-height:1.8;">
+              <li>Turn on the Crankinator system</li>
+              <li>Run 5 trials for each answer length setting</li>
+              <li>Answer lengths: 25, 50, 100, 200, 400 words</li>
+              <li>Record: duration + total energy used (mWh)</li>
+              <li>Subtract idle power to get AI-only energy</li>
+            </ol>
+          </div>
+        </div>
+        <div class="stack">
+          <div style="background:rgba(240,140,120,0.1); border-radius:14px; padding:24px; border-left:5px solid var(--coral);">
+            <h3 style="color:var(--coral); margin-bottom:12px;">Prompt Used</h3>
+            <p style="font-style:italic; color:var(--gray); font-size:15px; line-height:1.6;">
+              "Why is grass green scientifically in an easy to understand way."
+            </p>
+            <p style="margin-top:10px; font-size:13px; color:#888;">Same prompt every trial — only the word limit changed.</p>
+          </div>
+          <div style="background:rgba(27,122,58,0.08); border-radius:14px; padding:24px; border-left:5px solid var(--green);">
+            <h3 style="color:var(--green); margin-bottom:12px;">Control Variables</h3>
+            <ul style="list-style:none; color:var(--gray); font-size:14px; line-height:1.8;">
+              <li>✔ Same AI model every trial</li>
+              <li>✔ Same prompt every trial</li>
+              <li>✔ Same hardware / temperature</li>
+              <li>✔ 5 trials per condition (25 total)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 8 — Results
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <svg style="position:absolute;top:0;right:0;width:120px;height:120px;" viewBox="0 0 120 120"><polygon points="120,0 120,120 0,0" fill="var(--coral)" opacity="0.4"/></svg>
+    <div style="width:100%;">
+      <p class="slide-label" style="color:rgba(255,255,255,0.55);">Experiment Results</p>
+      <h2 class="tc-white" style="margin-bottom:24px;">Energy by Answer Length</h2>
+      <div class="cols-2" style="align-items:start; gap:32px;">
+        <div>
+          <div class="chart-wrap">
+            <div class="chart-title" style="color:rgba(255,255,255,0.6);">Mean Energy Used (mWh) · 5 trials each</div>
+            <div class="bar-group">
+              <div class="bar-row">
+                <div class="bar-label" style="color:rgba(255,255,255,0.7);">25 w</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:10.7%; background:#6EC6F0;">20.2</div>
+                </div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label" style="color:rgba(255,255,255,0.7);">50 w</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:16.7%; background:#F5A623;">31.4</div>
+                </div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label" style="color:rgba(255,255,255,0.7);">100 w</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:28.6%; background:#7ED321;">53.8</div>
+                </div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label" style="color:rgba(255,255,255,0.7);">200 w</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:52.4%; background:#F08C78;">98.6</div>
+                </div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label" style="color:rgba(255,255,255,0.7);">400 w</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:100%; background:#E8D44D; color:#333;">188.2 mWh</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="color:rgba(255,255,255,0.5); font-size:12px; margin-top:10px; text-align:center;">
+            Longer answers consistently used more energy across all 5 trials
+          </p>
+        </div>
+        <div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Words</th>
+                <th>Mean (mWh)</th>
+                <th>Per Word</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>25</td>
+                <td class="highlight">20.20</td>
+                <td>0.808</td>
+              </tr>
+              <tr>
+                <td>50</td>
+                <td class="highlight">31.38</td>
+                <td>0.628</td>
+              </tr>
+              <tr>
+                <td>100</td>
+                <td class="highlight">53.82</td>
+                <td>0.538</td>
+              </tr>
+              <tr>
+                <td>200</td>
+                <td class="highlight">98.62</td>
+                <td>0.493</td>
+              </tr>
+              <tr>
+                <td>400</td>
+                <td class="highlight">188.20</td>
+                <td>0.471</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:20px; background:rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+            <p style="color:var(--coral); font-weight:700; font-size:14px; margin-bottom:6px;">📈 Key Pattern</p>
+            <p style="color:rgba(255,255,255,0.8); font-size:14px; line-height:1.6;">
+              Every 100 extra words → <strong style="color:var(--coral);">~45 more mWh</strong>.<br>
+              Energy per word <em>decreases</em> for longer answers (more efficient at scale).
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 9 — Conclusion
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <div style="width:100%;">
+      <p class="slide-label on-cream tc-green">Findings</p>
+      <h2 class="tc-blue" style="margin-bottom:28px;">Conclusion</h2>
+      <div class="cols-2">
+        <div class="stack">
+          <div style="background:white; border-radius:14px; padding:24px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+            <h3 style="color:var(--green); margin-bottom:16px;">3 Key Findings</h3>
+            <ul class="step-list">
+              <li>
+                <span class="step-num" style="background:var(--green);">1</span>
+                <span style="color:var(--black);">Longer answers use <strong>more energy</strong> — consistently</span>
+              </li>
+              <li>
+                <span class="step-num" style="background:var(--blue);">2</span>
+                <span style="color:var(--black);">Energy per word <strong>gets smaller</strong> for longer answers (more efficient)</span>
+              </li>
+              <li>
+                <span class="step-num" style="background:var(--coral);">3</span>
+                <span style="color:var(--black);">Energy scales <strong>predictably</strong>: ~45 mWh per 100 extra words</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div style="background:white; border-radius:14px; padding:24px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+            <h3 style="color:var(--green); margin-bottom:16px;">Cranking Time at 5.51W</h3>
+            <table class="data-table" style="background:transparent;">
+              <thead>
+                <tr style="background:var(--green);">
+                  <th style="background:var(--green); color:white; border-radius:4px 0 0 0;">Answer length</th>
+                  <th style="background:var(--green); color:white; border-radius:0 4px 0 0;">Time cranking</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="color:var(--black);">25 words</td><td style="color:var(--green); font-weight:700;">13 seconds</td></tr>
+                <tr><td style="color:var(--black);">50 words</td><td style="color:var(--green); font-weight:700;">21 seconds</td></tr>
+                <tr><td style="color:var(--black);">100 words</td><td style="color:var(--green); font-weight:700;">35 seconds</td></tr>
+                <tr><td style="color:var(--black);">200 words</td><td style="color:var(--green); font-weight:700;">64 seconds</td></tr>
+                <tr><td style="color:var(--black);">400 words</td><td style="color:var(--coral); font-weight:700;">123 seconds!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 10 — CER
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <svg style="position:absolute;top:0;right:0;width:120px;height:120px;" viewBox="0 0 120 120"><polygon points="120,0 120,120 0,0" fill="var(--coral)" opacity="0.4"/></svg>
+    <div style="width:100%;">
+      <p class="slide-label" style="color:rgba(255,255,255,0.55);">Scientific Argument</p>
+      <h2 class="tc-white" style="margin-bottom:28px;">Claim · Evidence · Reasoning</h2>
+      <div class="cols-3">
+        <div class="card-dark" style="border-top: 4px solid var(--coral);">
+          <h3 class="tc-coral" style="margin-bottom:14px; font-size:20px;">Claim</h3>
+          <p class="tc-white" style="font-size:15px; line-height:1.7;">
+            AI is not free. It requires real electrical energy to work, and longer answers require significantly more energy.
+          </p>
+        </div>
+        <div class="card-dark" style="border-top: 4px solid #6EC6F0;">
+          <h3 style="color:#6EC6F0; margin-bottom:14px; font-size:20px;">Evidence</h3>
+          <p class="tc-white" style="font-size:15px; line-height:1.7;">
+            Our measurements showed: a 25-word answer used 20 mWh while a 400-word answer used 188 mWh — a <strong style="color:var(--coral);">9× difference</strong>. Results were consistent across 5 trials.
+          </p>
+        </div>
+        <div class="card-dark" style="border-top: 4px solid #7ED321;">
+          <h3 style="color:#7ED321; margin-bottom:14px; font-size:20px;">Reasoning</h3>
+          <p class="tc-white" style="font-size:15px; line-height:1.7;">
+            The Crankinator makes users generate that exact energy by hand. When you crank for 2 minutes for a long answer, you truly <strong style="color:var(--coral);">feel</strong> what AI costs — proving energy use is real and measurable.
+          </p>
+        </div>
+      </div>
+      <div style="margin-top:28px; background:rgba(255,255,255,0.07); border-radius:14px; padding:20px 28px; border-left:4px solid var(--coral);">
+        <p class="tc-white" style="font-size:clamp(14px,1.7vw,17px); line-height:1.7; font-style:italic;">
+          "The Crankinator helps people <em>comprehend</em> the energy cost because they can sense the effort needed to produce it — making invisible electricity visible."
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SLIDE 11 — Q&A / Try It
+  ══════════════════════════════════════════ -->
+  <div class="slide" id="s11">
+    <div style="text-align:center; max-width:800px;">
+      <div style="font-size:72px; margin-bottom:24px;">⚙️</div>
+      <h1 style="color:var(--white); font-size:clamp(36px,5vw,64px);">
+        Want to <span style="color:var(--coral);">try it?</span>
+      </h1>
+      <p style="color:rgba(255,255,255,0.7); font-size:clamp(16px,2vw,22px); margin-top:20px; line-height:1.6;">
+        Come ask the Crankinator a question and crank your own answer.
+      </p>
+      <div style="display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin-top:48px;">
+        <div class="card-dark" style="max-width:200px;">
+          <div style="font-size:32px; margin-bottom:8px;">🤔</div>
+          <p style="color:var(--white); font-weight:700;">Ask anything</p>
+        </div>
+        <div class="card-dark" style="max-width:200px;">
+          <div style="font-size:32px; margin-bottom:8px;">🔒</div>
+          <p style="color:var(--white); font-weight:700;">Watch it lock</p>
+        </div>
+        <div class="card-dark" style="max-width:200px;">
+          <div style="font-size:32px; margin-bottom:8px;">🔄</div>
+          <p style="color:var(--white); font-weight:700;">Crank for it</p>
+        </div>
+        <div class="card-dark" style="max-width:200px;">
+          <div style="font-size:32px; margin-bottom:8px;">🔓</div>
+          <p style="color:var(--white); font-weight:700;">Unlock!</p>
+        </div>
+      </div>
+      <div style="margin-top:48px; display:flex; gap:24px; justify-content:center; flex-wrap:wrap;">
+        <div>
+          <p style="color:rgba(255,255,255,0.4); font-size:12px; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Presenters</p>
+          <p style="color:var(--white); font-size:18px; font-weight:700;">Julian Mariano-Graham &amp; Nathan Graham</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Nav bar -->
+<div id="ui">
+  <button id="prev-btn" title="Previous (←)">◀</button>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <button id="next-btn" title="Next (→)">▶</button>
+  <div id="slide-counter">1 / 11</div>
+</div>
+
+<div id="hint">← → arrow keys to navigate</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total  = slides.length;
+  let cur = 0;
+
+  const fill    = document.getElementById('progress-fill');
+  const counter = document.getElementById('slide-counter');
+
+  function go(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    fill.style.width = ((cur + 1) / total * 100) + '%';
+    counter.textContent = (cur + 1) + ' / ' + total;
+
+    // Hide hint after first nav
+    if (cur > 0) document.getElementById('hint').style.opacity = '0';
+  }
+
+  document.getElementById('prev-btn').addEventListener('click', () => go(cur - 1));
+  document.getElementById('next-btn').addEventListener('click', () => go(cur + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); go(cur - 1); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End')  go(total - 1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) go(dx < 0 ? cur + 1 : cur - 1);
+  });
+
+  // Init
+  go(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+[Unit]
+# Replace YOUR_USERNAME and YOUR_MODEL_FILENAME.gguf before installing.
+Description=crankgpt Flask kiosk app
+After=network.target llama-cpp.service um34c-rfcomm.service
+Requires=llama-cpp.service
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/crankgpt
+Environment=PYTHONUNBUFFERED=1
+Environment=MODEL_BACKEND=llama_cpp
+Environment=LLAMA_CPP_BASE_URL=http://127.0.0.1:11439
+Environment=LLAMA_CPP_MODEL=YOUR_MODEL_FILENAME.gguf
+Environment=UM34C_SERIAL_PORT=/dev/rfcomm0
+Environment=UM34C_DATA_GROUP=0
+Environment=HOST=0.0.0.0
+Environment=PORT=8080
+ExecStart=/home/YOUR_USERNAME/crankgpt/.venv/bin/python app.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

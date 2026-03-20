@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crankinator Kiosk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@600;700;900&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-title">
+          <p class="eyebrow">Jetson Orin Nano kiosk</p>
+          <h1>The Crankinator</h1>
+        </div>
+
+        <div class="topbar-meta">
+          <div class="meta-pill meta-live">{{ ui_config.runtimeLabel }}</div>
+          <div class="meta-pill meta-model" title="{{ ui_config.model }}">{{ ui_config.modelDisplay }}</div>
+          <div class="meta-pill meta-session">
+            <span>Session</span>
+            <strong id="sessionId">Waiting</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="control-panel">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Prompt</p>
+              <h2>Ask a question</h2>
+            </div>
+            <div class="status-chip status-idle" id="statusChip">Idle</div>
+          </div>
+
+          <form id="promptForm" class="prompt-form">
+            <label class="field-label" for="promptInput">Question</label>
+            <textarea
+              id="promptInput"
+              name="prompt"
+              rows="4"
+              placeholder="Type the question you want answered."
+            ></textarea>
+
+            <input
+              type="hidden"
+              id="lengthInput"
+              name="answer_length"
+              value="{{ ui_config.defaultPresetKey }}"
+            >
+
+            <div class="length-strip" role="radiogroup" aria-label="Answer size">
+              {% for preset in ui_config.presets %}
+                <button
+                  type="button"
+                  class="length-button{% if preset.key == ui_config.defaultPresetKey %} is-active{% endif %}"
+                  data-preset-key="{{ preset.key }}"
+                  aria-pressed="{% if preset.key == ui_config.defaultPresetKey %}true{% else %}false{% endif %}"
+                >
+                  <span class="length-label">{{ preset.label }}</span>
+                  <span class="length-meta">{{ preset.words }} words</span>
+                </button>
+              {% endfor %}
+            </div>
+
+            <div class="preset-inline" id="presetSummary">
+              <span id="presetWords">Small · 25 words</span>
+              <span class="preset-divider"></span>
+              <strong id="presetEnergy">Measured live</strong>
+            </div>
+
+            <div class="button-row">
+              <button type="submit" class="primary-button" id="submitButton">
+                Generate Answer
+              </button>
+              <button type="button" class="secondary-button" id="unlockButton" disabled>
+                Manual Unlock
+              </button>
+              <button type="button" class="ghost-button" id="resetButton">
+                Reset
+              </button>
+            </div>
+
+            <div class="message-banner" id="messageBanner">
+              Prompt is ready. Generate a locked answer.
+            </div>
+          </form>
+        </section>
+
+        <section class="answer-panel">
+          <div class="section-head answer-head">
+            <div>
+              <p class="section-kicker">Answer</p>
+              <h2>Locked until released</h2>
+            </div>
+            <div class="answer-timing" id="generationTiming">No generation yet</div>
+          </div>
+
+          <article class="answer-card" id="answerCard" data-locked="true">
+            <div class="answer-mask" id="answerMask">
+              <span class="mask-kicker">Locked</span>
+              <h3>Answer hidden</h3>
+              <p>Crank until the measured energy target is reached, or use manual unlock as a fallback.</p>
+            </div>
+            <pre class="answer-text" id="answerText">Your answer will appear here.</pre>
+          </article>
+
+          <div class="progress-panel">
+            <div class="progress-copy">
+              <span class="section-kicker">Progress</span>
+              <strong id="progressHeadline">Waiting for a generated answer</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="metric-label">Required</span>
+              <strong class="metric-value" id="energyRequiredValue">--</strong>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Crank</span>
+              <strong class="metric-value" id="crankProgressValue">0%</strong>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Lock</span>
+              <strong class="metric-value" id="answerLockedValue">true</strong>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      window.CRANKINATOR_CONFIG = {{ ui_config | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

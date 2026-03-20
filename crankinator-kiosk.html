@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Crankinator: The Cost of an Answer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0d1117;
+    --panel:   #161b22;
+    --card:    #1c2333;
+    --border:  #30394d;
+    --accent:  #f5c400;
+    --orange:  #ff6b2b;
+    --green:   #00e676;
+    --red:     #ff4d4d;
+    --text:    #ffffff;
+    --body2:   #c9d1e0;
+    --muted:   #8b98b0;
+    --dim:     #44526a;
+    --sans:    'Barlow Condensed', sans-serif;
+    --mono:    'Share Tech Mono', monospace;
+    --body:    'Barlow', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow: hidden;
+  }
+
+  /* ════════════════════════════════
+     LAYOUT SHELL
+  ════════════════════════════════ */
+  .kiosk {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+  }
+
+  /* ════════════════════════════════
+     HEADER
+  ════════════════════════════════ */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 4px solid var(--accent);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-bolt { font-size: 2rem; line-height: 1; }
+  .logo-name {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 2rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    display: block;
+  }
+  .logo-tagline {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    display: block;
+    margin-top: 3px;
+  }
+
+  .header-badges {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 2px solid;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .badge-green {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(0,230,118,0.07);
+  }
+  .badge-yellow {
+    border-color: rgba(245,196,0,0.5);
+    color: var(--accent);
+    background: rgba(245,196,0,0.06);
+  }
+  .status-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* ════════════════════════════════
+     MAIN — two-column grid
+  ════════════════════════════════ */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ════════════════════════════════
+     LEFT PANEL
+  ════════════════════════════════ */
+  .left-panel {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border-right: 3px solid var(--border);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ── Input zone ── */
+  .input-zone {
+    background: var(--panel);
+    border-bottom: 3px solid var(--border);
+    padding: 14px 18px 12px;
+    flex-shrink: 0;
+  }
+
+  .step-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    background: var(--accent);
+    color: #000;
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1rem;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-label {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  textarea#prompt {
+    width: 100%;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-left: 5px solid var(--accent);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 1.1rem;
+    padding: 12px 14px;
+    resize: none;
+    height: 72px;
+    outline: none;
+    line-height: 1.5;
+    transition: border-color .2s;
+  }
+  textarea#prompt::placeholder { color: var(--dim); font-style: italic; }
+  textarea#prompt:focus { border-color: var(--accent); }
+
+  /* ── Length buttons ── */
+  .mt-step { margin-top: 12px; }
+
+  .length-row {
+    display: flex;
+    gap: 6px;
+  }
+  .length-btn {
+    flex: 1;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 9px 3px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    line-height: 1.2;
+  }
+  .length-btn .lbl-words {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--dim);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .length-btn .lbl-mwh {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--dim);
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+  }
+  .length-btn:hover {
+    border-color: var(--muted);
+    color: var(--text);
+  }
+  .length-btn:hover .lbl-words,
+  .length-btn:hover .lbl-mwh { color: var(--muted); }
+  .length-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #000;
+  }
+  .length-btn.active .lbl-words,
+  .length-btn.active .lbl-mwh { color: rgba(0,0,0,0.5); }
+
+  /* ── Submit row ── */
+  .submit-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  #submitBtn {
+    flex: 1;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 13px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background .15s;
+  }
+  #submitBtn:hover { background: #ffd740; }
+  #submitBtn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .reset-btn {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ════════════════════════════════
+     ANSWER ZONE (scrollable)
+  ════════════════════════════════ */
+  .answer-zone {
+    overflow-y: auto;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* — Idle state — */
+  .idle-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+    text-align: center;
+  }
+  .idle-bolt {
+    font-size: 4rem;
+    opacity: 0.15;
+    animation: bob 3s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .idle-headline {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .idle-steps-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 340px;
+  }
+  .idle-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--dim);
+    padding: 11px 15px;
+    text-align: left;
+  }
+  .idle-step-n {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.3rem;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 22px;
+  }
+  .idle-step-txt {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--body2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* — Thinking state — */
+  .thinking-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 22px;
+    text-align: center;
+  }
+  .think-spinner {
+    font-size: 3rem;
+    animation: spin 3s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .think-headline {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .think-sub {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .think-bar {
+    width: 300px; height: 5px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .think-bar::after {
+    content: '';
+    position: absolute; height: 100%; width: 40%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: sweep 1.1s ease-in-out infinite;
+  }
+  @keyframes sweep { 0%{left:-40%} 100%{left:140%} }
+
+  /* — Answer / locked state — */
+  .answer-state {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .answer-label-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .answer-label-badge {
+    background: var(--dim);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1rem;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .answer-label-text {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .unlock-banner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,230,118,0.1);
+    border: 2px solid var(--green);
+    padding: 13px 16px;
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green);
+  }
+
+  .answer-card {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-left: 5px solid var(--orange);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-height: 110px;
+  }
+  .answer-text {
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--body2);
+    white-space: pre-line;
+  }
+  .answer-text.blurred {
+    filter: blur(9px);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .lock-overlay {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(13,17,23,0.65);
+    backdrop-filter: blur(3px);
+  }
+  .lock-emoji {
+    font-size: 3.2rem;
+    animation: bob 3s ease-in-out infinite;
+  }
+  .lock-headline {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.55rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .lock-hint {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ════════════════════════════════
+     RIGHT PANEL — Energy
+  ════════════════════════════════ */
+  .right-panel {
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Section wrapper */
+  .rp-block {
+    padding: 14px 16px;
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+  .rp-block:last-child { border-bottom: none; }
+
+  .rp-section-title {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* ── Big mWh numbers ── */
+  .mwh-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mwh-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    padding: 12px 12px 10px;
+    text-align: center;
+  }
+  .mwh-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+  }
+  .mwh-val {
+    font-family: var(--mono);
+    font-size: 1.9rem;
+    color: var(--accent);
+    line-height: 1;
+    font-weight: bold;
+  }
+  .mwh-val.is-cranked { color: var(--green); }
+  .mwh-unit {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  /* ── Radial gauge ── */
+  .radial-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px 12px;
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+  .gauge-wrap {
+    position: relative;
+    width: 152px; height: 152px;
+  }
+  .gauge-svg {
+    width: 152px; height: 152px;
+    transform: rotate(-90deg);
+  }
+  .g-track { fill: none; stroke: var(--border); stroke-width: 14; }
+  .g-fill {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 14;
+    stroke-linecap: butt;
+    stroke-dasharray: 402;
+    stroke-dashoffset: 402;
+    transition: stroke-dashoffset .35s ease, stroke .3s;
+    filter: drop-shadow(0 0 7px rgba(245,196,0,.5));
+  }
+  .g-fill.done {
+    stroke: var(--green);
+    filter: drop-shadow(0 0 9px rgba(0,230,118,.6));
+  }
+  .gauge-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .gauge-pct {
+    font-family: var(--mono);
+    font-size: 2.2rem;
+    color: var(--accent);
+    font-weight: bold;
+    line-height: 1;
+    transition: color .3s;
+  }
+  .gauge-pct.done { color: var(--green); }
+  .gauge-pct-sub {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+  }
+  .gauge-caption {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  /* ── Progress bar ── */
+  .bar-block { padding: 12px 16px; border-bottom: 2px solid var(--border); flex-shrink: 0; }
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .bar-track {
+    height: 28px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange) 0%, var(--accent) 100%);
+    transition: width .35s ease;
+    display: flex; align-items: center; justify-content: flex-end;
+    position: relative;
+  }
+  .bar-fill::after {
+    content: '';
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 3px; background: #fff; opacity: .55;
+    box-shadow: 0 0 6px #fff;
+  }
+  .bar-fill.done { background: var(--green); }
+  .bar-inner-lbl {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: rgba(0,0,0,.75);
+    padding-right: 8px;
+    letter-spacing: 0.04em;
+    display: none;
+    white-space: nowrap;
+  }
+  .bar-fill.show-lbl .bar-inner-lbl { display: block; }
+
+  /* ── Crank status / live power ── */
+  .crank-block {
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .crank-headline {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.25;
+  }
+  .crank-body {
+    font-family: var(--body);
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .live-power-card {
+    margin-top: auto;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-left: 5px solid var(--green);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lp-label {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .lp-source {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-top: 2px;
+  }
+  .lp-reading {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    color: var(--green);
+    font-weight: bold;
+  }
+
+  /* ════════════════════════════════
+     FOOTER
+  ════════════════════════════════ */
+  footer {
+    border-top: 2px solid var(--border);
+    background: var(--panel);
+    padding: 7px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .f-txt {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ════════════════════════════════
+     ANIMATIONS
+  ════════════════════════════════ */
+  @keyframes unlock-pop {
+    0%   { opacity: 0; transform: scale(.95); }
+    60%  { opacity: 1; transform: scale(1.015); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .do-unlock-anim { animation: unlock-pop .5s ease-out forwards; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="kiosk">
+
+  <!-- ═══ HEADER ═══ -->
+  <header>
+    <div class="logo">
+      <span class="logo-bolt">⚡</span>
+      <div>
+        <span class="logo-name">The Crankinator</span>
+        <span class="logo-tagline">The Cost of an Answer</span>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="badge badge-green">
+        <div class="status-dot"></div>
+        Model Ready
+      </div>
+      <div class="badge badge-yellow">Llama 3.2 · 3B Instruct</div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <main>
+
+    <!-- ─── LEFT PANEL ─── -->
+    <div class="left-panel">
+
+      <div class="input-zone">
+
+        <!-- STEP 1 -->
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <span class="step-label">Ask your question</span>
+        </div>
+        <textarea id="prompt" placeholder="Type your question here…  (Ctrl+Enter to submit)"></textarea>
+
+        <!-- STEP 2 -->
+        <div class="step-row mt-step">
+          <div class="step-num">2</div>
+          <span class="step-label">Choose answer length</span>
+        </div>
+        <div class="length-row">
+          <button class="length-btn active" data-words="25"  data-mwh="20.2">
+            Very Short
+            <span class="lbl-words">~25 words</span>
+            <span class="lbl-mwh">~20 mWh</span>
+          </button>
+          <button class="length-btn" data-words="50"  data-mwh="31.38">
+            Short
+            <span class="lbl-words">~50 words</span>
+            <span class="lbl-mwh">~31 mWh</span>
+          </button>
+          <button class="length-btn" data-words="100" data-mwh="53.82">
+            Medium
+            <span class="lbl-words">~100 words</span>
+            <span class="lbl-mwh">~54 mWh</span>
+          </button>
+          <button class="length-btn" data-words="200" data-mwh="98.62">
+            Long
+            <span class="lbl-words">~200 words</span>
+            <span class="lbl-mwh">~99 mWh</span>
+          </button>
+          <button class="length-btn" data-words="400" data-mwh="188.20">
+            Very Long
+            <span class="lbl-words">~400 words</span>
+            <span class="lbl-mwh">~188 mWh</span>
+          </button>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="submit-row">
+          <button id="submitBtn"><span>⚡</span> Submit Question</button>
+          <button class="reset-btn" id="resetBtn">↺ Reset</button>
+        </div>
+
+      </div><!-- /input-zone -->
+
+      <!-- ─── ANSWER AREA ─── -->
+      <div class="answer-zone">
+
+        <!-- IDLE -->
+        <div class="idle-state" id="idleState">
+          <div class="idle-bolt">⚡</div>
+          <div class="idle-headline">How it works</div>
+          <div class="idle-steps-grid">
+            <div class="idle-step">
+              <span class="idle-step-n">1</span>
+              <span class="idle-step-txt">Type a question above</span>
+            </div>
+            <div class="idle-step">
+              <span class="idle-step-n">2</span>
+              <span class="idle-step-txt">Choose how long the answer should be</span>
+            </div>
+            <div class="idle-step">
+              <span class="idle-step-n">3</span>
+              <span class="idle-step-txt">The AI generates your answer &amp; measures energy used</span>
+            </div>
+            <div class="idle-step">
+              <span class="idle-step-n">4</span>
+              <span class="idle-step-txt">Crank the generator until it unlocks!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- THINKING -->
+        <div class="thinking-state" id="thinkingState">
+          <div class="think-spinner">⚙️</div>
+          <div class="think-headline" id="thinkHeadline">Generating Answer…</div>
+          <div class="think-bar"></div>
+          <div class="think-sub" id="thinkSub">Please wait…</div>
+        </div>
+
+        <!-- ANSWER / LOCKED -->
+        <div class="answer-state" id="answerState">
+
+          <div class="answer-label-row">
+            <div class="answer-label-badge">4</div>
+            <span class="answer-label-text">Your Answer</span>
+          </div>
+
+          <div class="unlock-banner" id="unlockBanner">
+            ✓ &nbsp; Answer Unlocked — You Earned It!
+          </div>
+
+          <div class="answer-card" id="answerCard">
+            <div class="answer-text blurred" id="answerText"></div>
+            <div class="lock-overlay" id="lockOverlay">
+              <div class="lock-emoji">🔒</div>
+              <div class="lock-headline">Crank to Unlock<br>Your Answer</div>
+              <div class="lock-hint">→ Turn the hand crank on the right</div>
+            </div>
+          </div>
+
+        </div><!-- /answer-state -->
+
+      </div><!-- /answer-zone -->
+
+    </div><!-- /left-panel -->
+
+    <!-- ─── RIGHT PANEL ─── -->
+    <div class="right-panel">
+
+      <!-- mWh numbers -->
+      <div class="rp-block">
+        <div class="rp-section-title">Energy Meter</div>
+        <div class="mwh-pair">
+          <div class="mwh-card">
+            <div class="mwh-label">Required</div>
+            <div class="mwh-val" id="reqVal">—</div>
+            <div class="mwh-unit">mWh needed</div>
+          </div>
+          <div class="mwh-card">
+            <div class="mwh-label">Cranked</div>
+            <div class="mwh-val is-cranked" id="crankVal">0.0</div>
+            <div class="mwh-unit">mWh made</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radial gauge -->
+      <div class="radial-block">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 152 152">
+            <circle class="g-track" cx="76" cy="76" r="64"/>
+            <circle class="g-fill" id="gFill" cx="76" cy="76" r="64"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-pct" id="gPct">0%</div>
+            <div class="gauge-pct-sub">Complete</div>
+          </div>
+        </div>
+        <div class="gauge-caption" id="gCap">Waiting for question…</div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="bar-block">
+        <div class="bar-labels">
+          <span>0 mWh</span>
+          <span id="barMax">— mWh</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="barFill" style="width:0%">
+            <span class="bar-inner-lbl" id="barInner"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Crank status + live reading -->
+      <div class="crank-block">
+        <div class="crank-headline" id="crankHeadline">Waiting for answer…</div>
+        <div class="crank-body" id="crankBody">Submit a question to see how much energy the AI uses to answer it.</div>
+        <div class="live-power-card">
+          <div>
+            <div class="lp-label">Live Crank Power</div>
+            <div class="lp-source">UM34C · Bluetooth</div>
+          </div>
+          <div class="lp-reading" id="liveWatt">0.00 W</div>
+        </div>
+      </div>
+
+    </div><!-- /right-panel -->
+
+  </main>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <div class="f-txt">The Crankinator · RPEMS Science Fair · Jetson Orin Nano + Llama 3.2 3B Instruct</div>
+    <div class="f-txt">Session <span id="sessId">—</span></div>
+  </footer>
+
+</div><!-- /kiosk -->
+
+<script>
+/* ─── Data ─── */
+const ENERGY = { 25:20.2, 50:31.38, 100:53.82, 200:98.62, 400:188.20 };
+const CIRC   = 402; // stroke-dasharray matches SVG r=64 → 2π×64 ≈ 402
+
+const ANSWERS = {
+  25:  "The sky looks blue because sunlight bounces off tiny air molecules. Blue light scatters more than other colors since it has a shorter wavelength, sending blue light in every direction across the sky.",
+  50:  "Sunlight looks white but contains every color mixed together. When it enters Earth's atmosphere, it collides with gas molecules. Blue light has a shorter wavelength, so it scatters in all directions much more strongly than red or yellow light. That scattered blue light fills the sky — wherever you look, blue light reaches your eyes.",
+  100: "Sunlight is a blend of every color in the rainbow. When it enters our atmosphere, it collides with tiny nitrogen and oxygen molecules. A process called Rayleigh scattering causes light with shorter wavelengths to bounce around far more than light with longer wavelengths. Blue light scatters roughly 5 times more than red light.\n\nThis scattered blue light bounces in every direction, reaching your eyes no matter where you look in the daytime sky. At sunset, sunlight travels through much more atmosphere to reach you. By then most blue has already scattered away, leaving the warm reds and oranges you see on the horizon.",
+  200: "Sunlight appears white, but it actually contains every color of the visible spectrum — from deep violet to deep red. When that multicolored sunlight enters Earth's atmosphere, it collides with billions of tiny gas molecules — mostly nitrogen and oxygen.\n\nThis triggers Rayleigh scattering. Blue light (about 450 nm) has a shorter wavelength than red light (about 700 nm). Shorter wavelengths scatter dramatically more — about 5.5× more for blue versus red. This means blue photons keep bouncing in all directions throughout the atmosphere, so no matter which part of the sky you look at, your eyes receive that scattered blue light.\n\nAt sunset, sunlight travels through far more atmosphere to reach you. Most blue scatters away before arriving, leaving the longer-wavelength reds and oranges to color the horizon.",
+  400: "Sunlight looks white, but it is actually a continuous spectrum of all visible wavelengths — from violet at around 380 nanometers to deep red at around 700 nanometers. A prism or raindrop reveals this by spreading white light into a full rainbow.\n\nWhen sunlight enters Earth's atmosphere, it collides with gas molecules — mostly nitrogen (78%) and oxygen (21%). These molecules are far smaller than the wavelength of visible light, triggering Rayleigh scattering — named after the physicist Lord Rayleigh who worked out the math in the 1870s.\n\nThe key: shorter wavelengths scatter far more powerfully than longer ones. Blue light (~450 nm) scatters roughly 5.5× more than red light (~700 nm). As sunlight passes through the atmosphere, blue photons get bounced in all directions — sideways, toward you, everywhere. Red photons mostly travel straight through. The result: no matter where you look, blue light has scattered into your eyes.\n\nSo why isn't the sky violet? Violet has an even shorter wavelength. Two reasons: the sun produces less violet light than blue, and our eyes are less sensitive to violet. The combination makes us see blue.\n\nSunsets flip this: sunlight travels through 10–20× more atmosphere near the horizon. Almost all blue scatters away before it reaches you, leaving reds and oranges to paint the sky."
+};
+
+/* ─── State ─── */
+let state     = 'idle';
+let selWords  = 25;
+let reqMWh    = 0;
+let crankMWh  = 0;
+let crankIv   = null;
+let sessNum   = Math.floor(Math.random() * 9000) + 1000;
+
+document.getElementById('sessId').textContent = 'SES-' + sessNum;
+
+/* ─── Length buttons ─── */
+document.querySelectorAll('.length-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (state !== 'idle' && state !== 'unlocked') return;
+    document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selWords = parseInt(btn.dataset.words);
+  });
+});
+
+/* ─── Controls ─── */
+document.getElementById('submitBtn').addEventListener('click', go);
+document.getElementById('prompt').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) go();
+});
+document.getElementById('resetBtn').addEventListener('click', reset);
+
+/* ─── Main flow ─── */
+function go() {
+  const q = document.getElementById('prompt').value.trim();
+  if (!q) {
+    const t = document.getElementById('prompt');
+    t.style.borderColor = 'var(--red)';
+    t.focus();
+    setTimeout(() => t.style.borderColor = '', 1000);
+    return;
+  }
+  state = 'thinking';
+  document.getElementById('submitBtn').disabled = true;
+  showPanel('thinking');
+  zeroEnergy();
+
+  setTimeout(() => {
+    document.getElementById('thinkHeadline').textContent = 'Measuring Energy Used…';
+    document.getElementById('thinkSub').textContent = 'Sampling INA3221 VDD_IN rail at 5 Hz on Jetson';
+  }, 1800);
+
+  setTimeout(() => {
+    reqMWh   = ENERGY[selWords];
+    crankMWh = 0;
+    document.getElementById('reqVal').textContent  = reqMWh.toFixed(1);
+    document.getElementById('barMax').textContent  = reqMWh.toFixed(1) + ' mWh';
+    document.getElementById('answerText').textContent = ANSWERS[selWords];
+    document.getElementById('answerText').classList.add('blurred');
+    document.getElementById('lockOverlay').style.display = 'flex';
+    document.getElementById('unlockBanner').style.display = 'none';
+    document.getElementById('answerCard').classList.remove('do-unlock-anim');
+    showPanel('answer');
+    document.getElementById('crankHeadline').textContent = '⚡ Crank to unlock your answer!';
+    document.getElementById('crankBody').textContent = 'Turn the hand crank generator. Every turn adds mWh credit. Keep going until the bar is full!';
+    state = 'cranking';
+    startCrank();
+  }, 3500);
+}
+
+function startCrank() {
+  crankIv = setInterval(() => {
+    if (state !== 'cranking') { clearInterval(crankIv); return; }
+    crankMWh = Math.min(crankMWh + Math.random() * 2.1 + 0.5, reqMWh);
+    document.getElementById('liveWatt').textContent = (Math.random() * 4.5 + 2.2).toFixed(2) + ' W';
+    setProgress(crankMWh, reqMWh);
+    if (crankMWh >= reqMWh) {
+      clearInterval(crankIv);
+      document.getElementById('liveWatt').textContent = '0.00 W';
+      setTimeout(unlock, 400);
+    }
+  }, 340);
+}
+
+function unlock() {
+  state = 'unlocked';
+  setProgress(reqMWh, reqMWh);
+  document.getElementById('answerText').classList.remove('blurred');
+  document.getElementById('lockOverlay').style.display = 'none';
+  document.getElementById('unlockBanner').style.display = 'flex';
+  document.getElementById('answerCard').classList.add('do-unlock-anim');
+  document.getElementById('crankHeadline').textContent = '✓ Answer Unlocked!';
+  document.getElementById('crankBody').textContent = 'You generated ' + reqMWh.toFixed(1) + ' mWh with your own hands! Press Reset for the next visitor.';
+  document.getElementById('submitBtn').disabled = false;
+}
+
+/* ─── Progress display ─── */
+function setProgress(cranked, required) {
+  const pct = required > 0 ? Math.min(100, Math.round(cranked / required * 100)) : 0;
+
+  document.getElementById('crankVal').textContent  = cranked.toFixed(1);
+  document.getElementById('gPct').textContent      = pct + '%';
+  document.getElementById('gFill').style.strokeDashoffset = CIRC - (pct / 100) * CIRC;
+
+  const fill = document.getElementById('barFill');
+  fill.style.width = pct + '%';
+  document.getElementById('barInner').textContent = cranked.toFixed(1) + ' mWh';
+  fill.classList.toggle('show-lbl', pct > 28);
+
+  const complete = pct >= 100;
+  document.getElementById('gFill').classList.toggle('done', complete);
+  document.getElementById('gPct').classList.toggle('done', complete);
+  fill.classList.toggle('done', complete);
+
+  if (complete) {
+    document.getElementById('gCap').textContent = 'Target reached — unlocking!';
+  } else if (required > 0) {
+    document.getElementById('gCap').textContent = (required - cranked).toFixed(1) + ' mWh remaining';
+  } else {
+    document.getElementById('gCap').textContent = 'Waiting for question…';
+  }
+}
+
+function zeroEnergy() {
+  setProgress(0, 0);
+  document.getElementById('reqVal').textContent   = '—';
+  document.getElementById('crankVal').textContent = '0.0';
+  document.getElementById('liveWatt').textContent = '0.00 W';
+  document.getElementById('barMax').textContent   = '— mWh';
+  document.getElementById('crankHeadline').textContent = 'Waiting for answer…';
+  document.getElementById('crankBody').textContent = 'Submit a question to see how much energy the AI uses to answer it.';
+}
+
+function showPanel(s) {
+  document.getElementById('idleState').style.display    = s === 'idle'     ? 'flex' : 'none';
+  document.getElementById('thinkingState').style.display= s === 'thinking' ? 'flex' : 'none';
+  document.getElementById('answerState').style.display  = s === 'answer'   ? 'flex' : 'none';
+}
+
+/* ─── Reset ─── */
+function reset() {
+  if (crankIv) clearInterval(crankIv);
+  state = 'idle'; crankMWh = 0; selWords = 25;
+  sessNum = Math.floor(Math.random() * 9000) + 1000;
+  document.getElementById('sessId').textContent = 'SES-' + sessNum;
+  document.getElementById('prompt').value = '';
+  document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-words="25"]').classList.add('active');
+  document.getElementById('submitBtn').disabled = false;
+  zeroEnergy();
+  showPanel('idle');
+}
+
+/* ─── Boot ─── */
+showPanel('idle');
+</script>
+</body>
+</html>

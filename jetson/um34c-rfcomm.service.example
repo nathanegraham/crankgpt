@@ -1,0 +1,14 @@
+[Unit]
+# Replace YOUR_UM34C_BLUETOOTH_MAC before installing.
+Description=Bind the UM34C Bluetooth serial port
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/rfcomm bind 0 YOUR_UM34C_BLUETOOTH_MAC 1
+ExecStop=/usr/bin/rfcomm release 0
+
+[Install]
+WantedBy=multi-user.target

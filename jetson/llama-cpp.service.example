@@ -1,0 +1,15 @@
+[Unit]
+# Replace YOUR_USERNAME and YOUR_MODEL_FILENAME.gguf before installing.
+Description=llama.cpp model server for crankgpt
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME
+ExecStart=/home/YOUR_USERNAME/llama.cpp/build-cuda-sm87/bin/llama-server -m /home/YOUR_USERNAME/models/YOUR_MODEL_FILENAME.gguf -ngl 99 -c 512 -b 64 -ub 64 --host 127.0.0.1 --port 11439 --reasoning off
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
